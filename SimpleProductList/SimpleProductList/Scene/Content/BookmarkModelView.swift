@@ -7,27 +7,37 @@
 
 import Foundation
 import Combine
+import RealmSwift
 
-final class BookmarkModelView: Modelable {
+final class BookmarkModelView: Modelable, Fetchable {
     typealias Model = [GoodsModelable]
     
-    var navigationTitle: String
+    private(set) var type: TabType = .bookmark
+    private(set) var navigationTitle: String = TabType.bookmark.name
     private(set) var item: Model = []
-    var itemUpdatePublisher = PassthroughSubject<[GoodsModelView], Never>()
+    private(set) var isLastItem: Bool = false
+    private(set) var isFetching: Bool = false
     
-    required init(_ type: TabType) {
-        self.navigationTitle = type.name
-    }
-    
-    func initializeModelView() {
+    var itemUpdatePublisher = PassthroughSubject<SnapshotItem, Never>()
         
+    func initializeModelView() {
+        let model: Results<GoodsDbModel>? = DatabaseStore.standard.load(filter: "userDatabaseId = \(Int.max)")
+        let sorted = model?.sorted(by: { $0.id < $1.id })
+        let cellModelViews:[ProductCellModelView] = model?.compactMap { ProductCellModelView($0, modelType: .bookmark) } ?? []
+        self.item = sorted?.compactMap({ $0 }) ?? []
+        itemUpdatePublisher.send(SnapshotItem(model: cellModelViews, isReset: true))
     }
     
     func fetchItem(_ lastId: Int? = nil) {
         
     }
     
-    func reload() {
-        
+    func reload() async {
+        await withCheckedContinuation { continuation in
+            DispatchQueue.main.async {
+                self.initializeModelView()
+                continuation.resume()
+            }
+        }
     }
 }

@@ -9,20 +9,26 @@ import UIKit
 import SnapKit
 import Combine
 
-class ProductCell: UICollectionViewCell {
+protocol ProductCellConfigurable: UICollectionViewCell {
+    func setupData(_ modelview: ProductCellModelView)
+    func setContentType(_ modelType: TabType)
+}
+
+final class ProductCell: UICollectionViewCell, ProductCellConfigurable {
+    static let reuseId = "ProductCell"
     private var subscription = Set<AnyCancellable>()
-    private let modelView = GoodsModelView()
-    
+    private let modelView = ProductCellModelView()
+
     private let imageContentView: ContentImageView = ContentImageView()
     private let isNewProduct: NewTagView = NewTagView()
 
     private lazy var imageContentStackView: UIStackView = {
         let stackView = UIStackView(arrangedSubviews: [imageContentView, UIView()])
         stackView.axis = .vertical
-        
+    
         imageContentView.snp.makeConstraints { make in
-            make.width.equalTo(80)
-            make.height.equalTo(80)
+            make.width.equalTo(ProductCellSize.IMAGE_SIZE)
+            make.height.equalTo(ProductCellSize.IMAGE_SIZE)
         }
         
         return stackView
@@ -74,7 +80,7 @@ class ProductCell: UICollectionViewCell {
         stackView.spacing = 8
         isNewProduct.snp.makeConstraints { make in
             make.width.equalTo(45)
-            make.height.equalTo(24)
+            make.height.equalTo(ProductCellSize.TAG_CONTAINER_HEIGHT)
         }
         return stackView
     }()
@@ -119,6 +125,9 @@ class ProductCell: UICollectionViewCell {
         
         self.modelView
             .$sellCounts
+            .map {
+                $0.toNumberString() + "개 구매중"
+            }
             .assign(to: \.text!, on: productStatus)
             .store(in: &subscription)
         
@@ -129,6 +138,24 @@ class ProductCell: UICollectionViewCell {
                 self.imageContentView.setImageURL(url)
             })
             .store(in: &subscription)
+        self.modelView
+            .$isSelected
+            .sink {[weak self] isSelected in
+                self?.imageContentView.bookmarkButton.isSelected = isSelected
+            }
+            .store(in: &subscription)
+        self.imageContentView
+            .bookmarkButton
+            .publisher(for: .touchUpInside)
+            .sink {[weak self] sender in
+                guard let self else {return}
+                do {
+                     try self.modelView.addBookmarkIfnotCreate(self.modelView.model)
+                    sender.isSelected.toggle()
+                } catch {
+                    
+                }
+            }.store(in: &subscription)
     }
     
     private func setupUI() {
@@ -138,22 +165,27 @@ class ProductCell: UICollectionViewCell {
         
         let stackView = UIStackView(arrangedSubviews: [imageContentStackView, contentStackView])
         stackView.axis = .horizontal
-        stackView.spacing = 18
+        stackView.spacing = ProductCellSize.BETWEEN_VIEW_PADDING
         
         self.contentView.addSubview(stackView)
         stackView.snp.makeConstraints { make in
-            make.edges.equalTo(self.contentView).inset(UIEdgeInsets(top: 18, left: 18, bottom: 18, right: 18))
+            make.edges.equalTo(self.contentView).inset(UIEdgeInsets(allPadding: ProductCellSize.PADDING))
         }
-        priceLabel.snp.makeConstraints { make in
-            make.height.equalTo(24)
+        priceContainer.snp.makeConstraints { make in
+            make.height.equalTo(ProductCellSize.PRICE_CONTAINER_HEIGHT)
         }
     }
     
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
-    
-    func setupData(_ modelview: GoodsModelView) {
+        
+    func setupData(_ modelview: ProductCellModelView) {
         self.modelView.updateModelView(target: modelview)
+        
+    }
+    
+    func setContentType(_ modelType: TabType) {
+        self.imageContentView.setContent(modelType)
     }
 }

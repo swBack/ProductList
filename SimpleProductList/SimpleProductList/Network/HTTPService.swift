@@ -86,3 +86,34 @@ extension HTTPInitialization: HTTPServiceConfigurable {
         return request
     }
 }
+
+enum Pagination {
+    case fetch(Int)
+}
+
+extension Pagination: HTTPServiceConfigurable {
+    var method: String {
+        return "get"
+    }
+    
+    var resource: String {
+        return "/api/home/goods?"
+    }
+    
+    var urlQuery:[URLQueryItem] {
+        switch self {
+        case .fetch(let lastId):
+            return [URLQueryItem(name: "lastId", value: "\(lastId)")]
+        }
+    }
+    
+    var urlRequest: URLRequest {
+        var component = URLComponents(string: baseURL + resource)!
+        component.queryItems = urlQuery
+        var request = URLRequest(url: component.url!)
+        request.httpMethod = method
+        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.addValue("application/json", forHTTPHeaderField: "Accept")
+        return request
+    }
+}

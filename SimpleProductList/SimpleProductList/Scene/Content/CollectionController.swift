@@ -25,9 +25,10 @@ fileprivate final class CollectionController: UIViewController {
         case content
     }
     
-    private typealias CollectionViewDatasource = UICollectionViewDiffableDataSource<Section, GoodsModelView>
-    private typealias CollectionViewSnapshot = NSDiffableDataSourceSnapshot<Section, GoodsModelView>
+    private typealias CollectionViewDatasource = UICollectionViewDiffableDataSource<Section, ProductCellModelView>
+    private typealias CollectionViewSnapshot = NSDiffableDataSourceSnapshot<Section, ProductCellModelView>
     private var subscripts = Set<AnyCancellable>()
+    
     private(set) lazy var collectionView: UICollectionView = {
         let refresh = UIRefreshControl()
         refresh.addTarget(self, action: #selector(didRefreshCollection(_:)), for: .valueChanged)
@@ -41,7 +42,7 @@ fileprivate final class CollectionController: UIViewController {
         collectionView.delegate = self
         collectionView.refreshControl = refresh
         collectionView.register(ProductCell.self,
-                                forCellWithReuseIdentifier: "ProductCell")
+                                forCellWithReuseIdentifier: ProductCell.reuseId)
         collectionView.register(BannerReusableView.self,
                                 forSupplementaryViewOfKind: UICollectionView.elementKindSectionHeader,
                                 withReuseIdentifier: BannerReusableView.reuseId)
@@ -50,7 +51,8 @@ fileprivate final class CollectionController: UIViewController {
     
     private lazy var datasource: CollectionViewDatasource = {
         let source = CollectionViewDatasource(collectionView: self.collectionView) { collectionView, indexPath, itemIdentifier in
-            let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "ProductCell", for: indexPath) as! ProductCell
+            let cell = collectionView.dequeueReusableCell(withReuseIdentifier: ProductCell.reuseId, for: indexPath) as! ProductCellConfigurable
+            cell.setContentType(itemIdentifier.modelType)
             cell.setupData(itemIdentifier)
             return cell
         }
@@ -58,14 +60,14 @@ fileprivate final class CollectionController: UIViewController {
         source.supplementaryViewProvider = {[weak self] (collectionView, kind, indexPath) -> UICollectionReusableView? in
             guard let self else {return nil}
             if let modelView = self.modelView as? ProductModelView {
-                guard modelView.bannerItem.count > 0 else { return nil }
+                guard modelView.bannerItem.count > 0 else { return UICollectionReusableView() }
                 let headerView = collectionView.dequeueReusableSupplementaryView(ofKind: kind,
                                                                                  withReuseIdentifier: BannerReusableView.reuseId,
                                                                                  for: indexPath) as! BannerReusableView
                 headerView.setBannerModel(modelView.bannerItem)
                 return headerView
             }
-            return nil
+            return UICollectionReusableView()
         }
         return source
     }()
@@ -89,18 +91,19 @@ fileprivate final class CollectionController: UIViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        self.tabBarController?.navigationItem.title = modelView.navigationTitle
         addCollectionView()
         modelView.initializeModelView()
+    }
+    
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        self.tabBarController?.navigationItem.title = modelView.navigationTitle
     }
     
     private func addCollectionView() {
         self.view.addSubview(self.collectionView)
         self.collectionView.snp.makeConstraints { make in
-            make.top.equalTo(self.view.safeAreaLayoutGuide)
-            make.bottom.equalTo(self.view.safeAreaLayoutGuide)
-            make.leading.equalTo(self.view.safeAreaLayoutGuide)
-            make.trailing.equalTo(self.view.safeAreaLayoutGuide)
+            make.edges.equalTo(self.view.safeAreaLayoutGuide)
         }
     }
     
@@ -109,37 +112,65 @@ fileprivate final class CollectionController: UIViewController {
             modelview.itemUpdatePublisher.eraseToAnyPublisher()
                 .receive(on: DispatchQueue.main)
                 .sink { newModel in
-                self.performSnapshot(models: newModel)
+                self.performSnapshot(model: newModel)
             }.store(in: &subscripts)
         }
         
         if let modelview = modelView as? BookmarkModelView {
-            modelview.itemUpdatePublisher.eraseToAnyPublisher().sink { newModel in
-                
+            modelview.itemUpdatePublisher.eraseToAnyPublisher()
+                .receive(on: DispatchQueue.main)
+                .sink { newModel in
+                self.performSnapshot(model: newModel)
             }.store(in: &subscripts)
         }
     }
     
-    private func performSnapshot(models: [GoodsModelView], animating: Bool = true) {
+    private func performSnapshot(model: SnapshotItem, animating: Bool = false) {
         var snapShot = CollectionViewSnapshot()
         snapShot.appendSections([.content])
-        snapShot.appendItems(models)
+        snapShot.appendItems(model.model)
+        if model.isReset {
+            snapShot.reloadSections([.content])
+        }
+        
         datasource.apply(snapShot, animatingDifferences: animating)
     }
     
     @objc private func didRefreshCollection(_ refreshControl: UIRefreshControl) {
-        self.modelView.reload()
+        Task {
+            await self.modelView.reload()
+            refreshControl.endRefreshing()
+        }
     }
 }
 
 extension CollectionController: CollectionDelegates {
+    func collectionView(_ collectionView: UICollectionView, willDisplay cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
+        guard let presentModels = modelView.item as? [GoodsModelable] else {return}
+        guard (presentModels.count - 1) == indexPath.row else {return}
+        modelView.fetchItem(presentModels[indexPath.row].id)
+    }
+    
+    func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, referenceSizeForHeaderInSection section: Int) -> CGSize {    
+        if self.modelView is ProductModelView {
+            return CGSize(width: UIScreen.main.bounds.width, height: UIScreen.main.bounds.width * 0.8)
+        }
+        return .zero
+    }
     
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
-        return CGSize(width: collectionView.frame.width, height: 150)
+        return self.modelView.calculateCellSize(indexPath: indexPath, cellWidth: collectionView.frame.width)
     }
     
     func collectionView(_ collectionView: UICollectionView, prefetchItemsAt indexPaths: [IndexPath]) {
-        
+        for indexPath in indexPaths {
+            if collectionView.indexPathsForVisibleItems.contains(indexPath) {
+                let cell = collectionView.dequeueReusableCell(withReuseIdentifier: BannerCell.reuseId, for: indexPath) as! ProductCellConfigurable
+                let modelView = ProductCellModelView((modelView.item as! [GoodsModelable])[indexPath.row],
+                               modelType: modelView.type)
+                cell.setupData(modelView)
+            }
+        }
     }
     
     func collectionView(_ collectionView: UICollectionView, cancelPrefetchingForItemsAt indexPaths: [IndexPath]) {

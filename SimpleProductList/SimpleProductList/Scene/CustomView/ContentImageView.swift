@@ -6,9 +6,12 @@
 //
 
 import UIKit
+import Combine
 
 class ContentImageView: UIView {
+    private var subscription = Set<AnyCancellable>()
     private(set) var imageView: UIImageView = UIImageView()
+    private let modelView = ContentImageModelView()
     
     private var shadowView: UIView = {
        let view = UIView()
@@ -16,17 +19,17 @@ class ContentImageView: UIView {
         return view
     }()
     
-    private lazy var bookmarkButton: UIButton = {
+    lazy var bookmarkButton: UIButton = {
         let button = UIButton()
         button.setImage(UIImage(systemName: "heart")?.withRenderingMode(.alwaysOriginal).withTintColor(.white), for: .normal)
         button.setImage(UIImage(systemName: "heart.fill")?.withRenderingMode(.alwaysOriginal).withTintColor(.custom_pink), for: .selected)
-        button.addTarget(self, action: #selector(changedStatus(_ :)), for: .touchUpInside)
         return button
     }()
     
     override init(frame: CGRect) {
         super.init(frame: frame)
         setupUI()
+        addPublished()
     }
     
     required init?(coder: NSCoder) {
@@ -63,11 +66,28 @@ class ContentImageView: UIView {
         }
     }
     
+    private func addPublished() {
+        modelView.$type
+            .receive(on: DispatchQueue.main)
+            .sink {[weak self] tabType in
+            self?.bookmarkButton.isHidden = tabType == .bookmark
+        }.store(in: &subscription)
+    }
+    
+    func setContent(_ type: TabType) {
+        modelView.setType(type)
+    }
+    
     func setImageURL(_ imageURL: URL) {
         self.imageView.setURLImage(url: imageURL)
     }
+}
+
+final class ContentImageModelView {
+    @Published var type: TabType = .home
+    var model: GoodsModelable?
     
-    @objc private func changedStatus(_ sender: UIButton) {
-        sender.isSelected.toggle()
+    func setType(_ type: TabType) {
+        self.type = type
     }
 }

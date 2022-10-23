@@ -17,6 +17,18 @@ protocol GoodsModelable {
     var sell_count: Int {get}
 }
 
+struct Pagingnation: Decodable {
+    var goods: [Goods]
+    
+    enum CodingKeys: CodingKey {
+        case goods
+    }
+    
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.goods = try container.decode([Goods].self, forKey: .goods)
+    }
+}
 struct Goods: Decodable, GoodsModelable {
     var id: Int
     var name: String
@@ -118,51 +130,5 @@ struct MockGoods: GoodsModelable {
                       is_new: true,
                       sell_count: 61)
         ]
-    }
-}
-
-class GoodsModelView: Hashable, Identifiable {
-    static func == (lhs: GoodsModelView, rhs: GoodsModelView) -> Bool {
-        return lhs.id == rhs.id
-    }
-    
-    func hash(into hasher: inout Hasher) {
-        hasher.combine(id)
-    }
-    
-    var id: UUID = UUID()
-    private var model: GoodsModelable?
-    @SellingCount private var sellingCount = "0" {
-        didSet {
-            self.sellCounts = sellingCount
-        }
-    }
-    @Published private(set) var name: String = ""
-    @Published private(set) var isNew: Bool = false
-    @Published private(set) var showSellingStatus: Bool = false
-    @Published private(set) var sellCounts: String = ""
-    @Published private(set) var discountRate: String = ""
-    @Published private(set) var price: String = ""
-    @Published private(set) var imageURL: URL?
-//    var image: URL
-    
-    init(_ model: any GoodsModelable) {
-        self.model = model
-    }
-
-    init() {
-    }
-    
-    func updateModelView(target: GoodsModelView) {
-        self.model = target.model
-        
-        guard let model else {return}
-        self.name = model.name
-        self.isNew = model.is_new
-        self.showSellingStatus = (model.sell_count) < 10
-        self.sellingCount = model.sell_count.toNumberString()
-        self.price = model.price.toNumberString()
-        self.discountRate = model.price.toDisscountRate(of: model.actual_price)
-        self.imageURL = model.image
     }
 }

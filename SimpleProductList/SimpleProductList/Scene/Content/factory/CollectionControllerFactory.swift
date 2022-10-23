@@ -17,9 +17,9 @@ struct CollectionControllerFactory {
     func createModelView() -> any Modelable {
         switch tabBarType {
         case .home:
-            return ProductModelView(tabBarType)
+            return ProductModelView()
         case .bookmark:
-            return BookmarkModelView(tabBarType)
+            return BookmarkModelView()
         }
     }    
 }

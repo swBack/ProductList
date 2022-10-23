@@ -8,5 +8,5 @@
 import Foundation
 
 protocol Bookmarkable: AnyObject {
-    func addBookmarkIfnotCreate(_ object: Decodable)
+    func addBookmarkIfnotCreate(_ object: GoodsModelable?) throws
 }
