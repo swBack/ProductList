@@ -57,20 +57,18 @@ class ProductCellModelView: Hashable, Identifiable, Bookmarkable {
     
     func addBookmarkIfnotCreate(_ object: GoodsModelable?) throws {
         guard let object else {return}
-        if isSelected {
-            do {
-                let fetch: Results<GoodsDbModel>? = DatabaseStore.standard.load(filter: "userDatabaseId = \(Int.max) AND id = \(object.id)")
-                guard let fetch = fetch?.first else {return}
+        
+        let fetch: Results<GoodsDbModel>? = DatabaseStore.standard.load(filter: "userDatabaseId = \(Int.max) AND id = \(object.id)")
+        
+        do {
+            if let fetch = fetch?.first {
                 try DatabaseStore.standard.delete(fetch)
-            } catch {
-                throw error
-            }
-        } else {
-            do {
+            } else {
                 try DatabaseStore.standard.save(GoodsDbModel(model: object))
-            } catch {
-                throw error
             }
+        } catch {
+            throw error
         }
+        
     }
 }
