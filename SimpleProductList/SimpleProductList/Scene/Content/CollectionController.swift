@@ -9,18 +9,9 @@ import UIKit
 import Combine
 import SnapKit
 
-extension CollectionControllerFactory {
-    static func createController(type: TabType) -> UIViewController {
-        let modelView = CollectionControllerFactory(tabBarType: type).createModelView()
-        let vc = CollectionController(modelView)
-        vc.tabBarItem = type.createTabBarItem()
-        return vc
-    }
-}
-
 typealias CollectionDelegates = UICollectionViewDelegate & UICollectionViewDataSourcePrefetching & UICollectionViewDelegateFlowLayout
 
-fileprivate final class CollectionController: UIViewController {
+final class CollectionController: UIViewController {
     private enum Section {
         case content
     }
@@ -108,24 +99,14 @@ fileprivate final class CollectionController: UIViewController {
     }
     
     private func addPublisher() {
-        if let modelview = modelView as? ProductModelView {
-            modelview.itemUpdatePublisher.eraseToAnyPublisher()
-                .receive(on: DispatchQueue.main)
-                .sink { newModel in
-                self.performSnapshot(model: newModel)
+        modelView.itemUpdatePublisher.eraseToAnyPublisher()
+            .receive(on: DispatchQueue.main)
+            .sink { snapshot in
+                self.performSnapshot(model: snapshot)
             }.store(in: &subscripts)
-        }
-        
-        if let modelview = modelView as? BookmarkModelView {
-            modelview.itemUpdatePublisher.eraseToAnyPublisher()
-                .receive(on: DispatchQueue.main)
-                .sink { newModel in
-                self.performSnapshot(model: newModel)
-            }.store(in: &subscripts)
-        }
     }
     
-    private func performSnapshot(model: SnapshotItem, animating: Bool = false) {
+    private func performSnapshot(model: SnapshotItem) {
         var snapShot = CollectionViewSnapshot()
         snapShot.appendSections([.content])
         snapShot.appendItems(model.model)
@@ -133,7 +114,7 @@ fileprivate final class CollectionController: UIViewController {
             snapShot.reloadSections([.content])
         }
         
-        datasource.apply(snapShot, animatingDifferences: animating)
+        datasource.apply(snapShot, animatingDifferences: false)
     }
     
     @objc private func didRefreshCollection(_ refreshControl: UIRefreshControl) {

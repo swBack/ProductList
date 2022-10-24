@@ -151,7 +151,6 @@ final class ProductCell: UICollectionViewCell, ProductCellConfigurable {
                 guard let self else {return}
                 do {
                      try self.modelView.addBookmarkIfnotCreate(self.modelView.model)
-                    sender.isSelected.toggle()
                 } catch {
                     
                 }

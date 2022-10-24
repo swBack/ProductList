@@ -41,7 +41,7 @@ class ProductCellModelView: Hashable, Identifiable, Bookmarkable {
     func updateModelView(target: ProductCellModelView) {
         self.model = target.model
         
-        guard let model else {return}
+        guard let model = self.model else {return}
         self.name = model.name
         self.isNew = model.is_new
         self.showSellingStatus = (model.sell_count) < 10
@@ -51,24 +51,30 @@ class ProductCellModelView: Hashable, Identifiable, Bookmarkable {
         self.imageURL = model.image
         self.modelType = target.modelType
         
-        let fetch: Results<GoodsDbModel>? = DatabaseStore.standard.load(filter: "userDatabaseId = \(Int.max) AND id = \(model.id)")
+        let fetch: Results<GoodsDbModel>? = fetchModel(model.id)
         self.isSelected = !(fetch?.isEmpty ?? true)
     }
     
     func addBookmarkIfnotCreate(_ object: GoodsModelable?) throws {
         guard let object else {return}
         
-        let fetch: Results<GoodsDbModel>? = DatabaseStore.standard.load(filter: "userDatabaseId = \(Int.max) AND id = \(object.id)")
+        let fetch: Results<GoodsDbModel>? = fetchModel(object.id)
         
         do {
             if let fetch = fetch?.first {
                 try DatabaseStore.standard.delete(fetch)
+                self.isSelected = false
             } else {
                 try DatabaseStore.standard.save(GoodsDbModel(model: object))
+                self.isSelected = true
             }
         } catch {
             throw error
         }
         
+    }
+    
+    private func fetchModel(_ id: Int) -> Results<GoodsDbModel>? {
+        return DatabaseStore.standard.load(filter: "userDatabaseId = \(Int.max) AND id = \(id)")
     }
 }

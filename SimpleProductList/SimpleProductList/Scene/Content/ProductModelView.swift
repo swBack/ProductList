@@ -56,6 +56,17 @@ final class ProductModelView: Modelable, Bannerable, Fetchable {
     func reload() async {
         self.initializeModelView()
     }
+    
+    func calculateCellSize(indexPath: IndexPath, cellWidth: CGFloat) -> CGSize {
+        guard self.item.count > indexPath.row else { return .zero }
+        
+        let contentWidth = cellWidth - ProductCell.ProductCellSize.IMAGE_SIZE - (ProductCell.ProductCellSize.PADDING * 2) - ProductCell.ProductCellSize.BETWEEN_VIEW_PADDING
+        let name = self.item[indexPath.row].name
+        let descrpitionContainer: CGFloat = name.calculateStringHeight(defualtSize: 30, maxWidthBound: contentWidth)
+        let contentHeight = descrpitionContainer + ProductCell.ProductCellSize.IMAGE_SIZE + ProductCell.ProductCellSize.PRICE_CONTAINER_HEIGHT + ProductCell.ProductCellSize.TAG_CONTAINER_HEIGHT
+        
+        return CGSize(width: cellWidth, height: contentHeight)
+    }
 }
 
 struct SnapshotItem {

@@ -45,6 +45,7 @@
 		AAD32E9E2905263300DDF555 /* ProductCellModelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAD32E9D2905263300DDF555 /* ProductCellModelView.swift */; };
 		AAD32EA229055E0300DDF555 /* UIControl+Combine.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAD32EA129055E0300DDF555 /* UIControl+Combine.swift */; };
 		AAD32EA529055F5500DDF555 /* DatabaseStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAD32EA429055F5500DDF555 /* DatabaseStore.swift */; };
+		AAD32EAC2906B84000DDF555 /* GoodsDbModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAD32EAB2906B84000DDF555 /* GoodsDbModel.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -66,8 +67,6 @@
 		AAD32E2B2902DA4C00DDF555 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		AAD32E302902DA4C00DDF555 /* SimpleProductListTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SimpleProductListTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		AAD32E342902DA4C00DDF555 /* SimpleProductListTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimpleProductListTests.swift; sourceTree = "<group>"; };
-		AAD32E3E2902DA4C00DDF555 /* SimpleProductListUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimpleProductListUITests.swift; sourceTree = "<group>"; };
-		AAD32E402902DA4C00DDF555 /* SimpleProductListUITestsLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimpleProductListUITestsLaunchTests.swift; sourceTree = "<group>"; };
 		AAD32E5C2902EA1600DDF555 /* MainTabController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabController.swift; sourceTree = "<group>"; };
 		AAD32E5F2902EA6000DDF555 /* TabType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabType.swift; sourceTree = "<group>"; };
 		AAD32E632902EA9F00DDF555 /* CollectionControllerFactory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollectionControllerFactory.swift; sourceTree = "<group>"; };
@@ -97,6 +96,7 @@
 		AAD32E9D2905263300DDF555 /* ProductCellModelView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProductCellModelView.swift; sourceTree = "<group>"; };
 		AAD32EA129055E0300DDF555 /* UIControl+Combine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "UIControl+Combine.swift"; sourceTree = "<group>"; };
 		AAD32EA429055F5500DDF555 /* DatabaseStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DatabaseStore.swift; sourceTree = "<group>"; };
+		AAD32EAB2906B84000DDF555 /* GoodsDbModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoodsDbModel.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -126,7 +126,6 @@
 			children = (
 				AAD32E1C2902DA4B00DDF555 /* SimpleProductList */,
 				AAD32E332902DA4C00DDF555 /* SimpleProductListTests */,
-				AAD32E3D2902DA4C00DDF555 /* SimpleProductListUITests */,
 				AAD32E1B2902DA4B00DDF555 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -160,15 +159,6 @@
 				AAD32E342902DA4C00DDF555 /* SimpleProductListTests.swift */,
 			);
 			path = SimpleProductListTests;
-			sourceTree = "<group>";
-		};
-		AAD32E3D2902DA4C00DDF555 /* SimpleProductListUITests */ = {
-			isa = PBXGroup;
-			children = (
-				AAD32E3E2902DA4C00DDF555 /* SimpleProductListUITests.swift */,
-				AAD32E402902DA4C00DDF555 /* SimpleProductListUITestsLaunchTests.swift */,
-			);
-			path = SimpleProductListUITests;
 			sourceTree = "<group>";
 		};
 		AAD32E582902E9E200DDF555 /* resource */ = {
@@ -329,9 +319,18 @@
 		AAD32EA329055F4300DDF555 /* Database */ = {
 			isa = PBXGroup;
 			children = (
+				AAD32EAA2906B83C00DDF555 /* Model */,
 				AAD32EA429055F5500DDF555 /* DatabaseStore.swift */,
 			);
 			path = Database;
+			sourceTree = "<group>";
+		};
+		AAD32EAA2906B83C00DDF555 /* Model */ = {
+			isa = PBXGroup;
+			children = (
+				AAD32EAB2906B84000DDF555 /* GoodsDbModel.swift */,
+			);
+			path = Model;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -445,6 +444,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AAD32EAC2906B84000DDF555 /* GoodsDbModel.swift in Sources */,
 				AAD32E1E2902DA4B00DDF555 /* AppDelegate.swift in Sources */,
 				AAD32E722902EDA000DDF555 /* ProductCell.swift in Sources */,
 				AAD32E8D290415C600DDF555 /* NewTagView.swift in Sources */,

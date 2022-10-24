@@ -14,12 +14,19 @@ struct CollectionControllerFactory {
         self.tabBarType = tabBarType
     }
 
-    func createModelView() -> any Modelable {
+    private func createModelView() -> any Modelable {
         switch tabBarType {
         case .home:
             return ProductModelView()
         case .bookmark:
             return BookmarkModelView()
         }
-    }    
+    }
+    
+    static func createController(type: TabType) -> UIViewController {
+        let modelView = CollectionControllerFactory(tabBarType: type).createModelView()
+        let vc = CollectionController(modelView)
+        vc.tabBarItem = type.createTabBarItem()
+        return vc
+    }
 }
