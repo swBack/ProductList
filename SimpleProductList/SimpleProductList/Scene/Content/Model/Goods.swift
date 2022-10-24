@@ -29,6 +29,7 @@ struct Pagingnation: Decodable {
         self.goods = try container.decode([Goods].self, forKey: .goods)
     }
 }
+
 struct Goods: Decodable, GoodsModelable {
     var id: Int
     var name: String

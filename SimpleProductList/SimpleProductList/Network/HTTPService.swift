@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import Alamofire
 
 enum HTTPResponseErorr: Error {
     case httpError(Int)
@@ -17,37 +18,23 @@ enum HTTPResponseErorr: Error {
 }
 
 protocol NetworkServiceable {
-    func request<T: Decodable>(_ request: URLRequest) async throws -> T
+    func request<T: Decodable>(_ requestURL: URL, method: HTTPMethod) async throws -> T
 }
 
 class HTTPService: NetworkServiceable {
-    private var session: URLSessionConfiguration = {
+    private var session: Session = {
         let configure = URLSessionConfiguration.default
         configure.timeoutIntervalForRequest = 3000
         configure.timeoutIntervalForResource = 3000
-        return configure
+        return Session(configuration: configure)
     }()
-    
-    func request<T>(_ request: URLRequest) async throws -> T where T : Decodable {
-        let (data , response) = try await URLSession.shared.data(for: request)
-        guard let statusCode = (response as? HTTPURLResponse)?.statusCode else {
-            let error = HTTPResponseErorr.unknown(request.url?.absoluteString ?? "")
-            throw error
-        }
         
-        if isSucess(statusCode) {
-            guard let result = try? JSONDecoder().decode(T.self, from: data) else {
-                let error = HTTPResponseErorr.decodeError(String(data: data, encoding: .utf8)!)
-                throw error
-            }
-            return result
-        }
-        let error = HTTPResponseErorr.httpError(statusCode)
-        throw error
-    }
-    
-    private func isSucess(_ statusCode: Int) -> Bool {
-        return (200...209).contains(statusCode)
+    func request<T>(_ requestURL: URL, method: HTTPMethod = .get) async throws -> T where T : Decodable {
+        return try await AF.request(requestURL,
+                                    method: method,
+                                    encoding : URLEncoding.default)
+        .serializingDecodable()
+        .value
     }
 }
 
@@ -57,7 +44,7 @@ protocol HTTPServiceConfigurable {
     var method: String {get}
     var resource: String {get}
     
-    var urlRequest: URLRequest{get}
+    var urlRequest: URL{get}
 }
 
 extension HTTPServiceConfigurable {
@@ -78,12 +65,8 @@ extension HTTPInitialization: HTTPServiceConfigurable {
         return "/api/home"
     }
     
-    var urlRequest: URLRequest {
-        var request = URLRequest(url: URL(string: baseURL + resource)!)
-        request.httpMethod = method
-        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.addValue("application/json", forHTTPHeaderField: "Accept")
-        return request
+    var urlRequest: URL {
+        return URL(string: baseURL + resource)!
     }
 }
 
@@ -107,13 +90,9 @@ extension Pagination: HTTPServiceConfigurable {
         }
     }
     
-    var urlRequest: URLRequest {
+    var urlRequest: URL {
         var component = URLComponents(string: baseURL + resource)!
         component.queryItems = urlQuery
-        var request = URLRequest(url: component.url!)
-        request.httpMethod = method
-        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.addValue("application/json", forHTTPHeaderField: "Accept")
-        return request
+        return component.url!
     }
 }

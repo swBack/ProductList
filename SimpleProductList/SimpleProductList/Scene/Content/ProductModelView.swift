@@ -26,11 +26,16 @@ final class ProductModelView: Modelable, Bannerable, Fetchable {
 
     func initializeModelView() {
         Task {
-            let result: Initialization = try await HTTPService().request(HTTPInitialization.initialize.urlRequest)
-            let cellModelViews:[ProductCellModelView] = result.goods.compactMap { ProductCellModelView($0, modelType: .home) }
-            self.item = result.goods
-            self.bannerItem = result.banners
-            itemUpdatePublisher.send(SnapshotItem(model: cellModelViews, isReset: true))
+            do {
+                let result: Initialization = try await HTTPService().request(HTTPInitialization.initialize.urlRequest)
+                let cellModelViews:[ProductCellModelView] = result.goods.compactMap { ProductCellModelView($0, modelType: .home) }
+                self.item = result.goods
+                self.bannerItem = result.banners
+                itemUpdatePublisher.send(SnapshotItem(model: cellModelViews, isReset: true))
+            } catch {
+                SystemAlert().showAlertController(title: "Warning",
+                                                  message: error.localizedDescription)
+            }
         }
     }
     
@@ -39,17 +44,22 @@ final class ProductModelView: Modelable, Bannerable, Fetchable {
         self.isFetching = true
         
         Task {
-            let result: Pagingnation = try await HTTPService().request(Pagination.fetch(lastId).urlRequest)
-            self.isFetching = false
-            
-            if result.goods.isEmpty {
-                self.isLastItem = true
-                return
+            do {
+                let result: Pagingnation = try await HTTPService().request(Pagination.fetch(lastId).urlRequest)
+                self.isFetching = false
+                
+                if result.goods.isEmpty {
+                    self.isLastItem = true
+                    return
+                }
+                
+                self.item.append(contentsOf: result.goods)
+                let cellModelViews:[ProductCellModelView] = self.item.compactMap { ProductCellModelView($0, modelType: .home) }
+                itemUpdatePublisher.send(SnapshotItem(model: cellModelViews, isReset: false))
+            } catch {
+                SystemAlert().showAlertController(title: "Warning",
+                                                  message: error.localizedDescription)
             }
-            
-            self.item.append(contentsOf: result.goods)
-            let cellModelViews:[ProductCellModelView] = self.item.compactMap { ProductCellModelView($0, modelType: .home) }
-            itemUpdatePublisher.send(SnapshotItem(model: cellModelViews, isReset: false))
         }
     }
     
@@ -67,9 +77,4 @@ final class ProductModelView: Modelable, Bannerable, Fetchable {
         
         return CGSize(width: cellWidth, height: contentHeight)
     }
-}
-
-struct SnapshotItem {
-    let model:[ProductCellModelView]
-    let isReset: Bool
 }
